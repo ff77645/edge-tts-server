@@ -1,4 +1,4 @@
-FROM node:alpine
+FROM node:hydrogen-alpine
 
 # 安装 python 环境
 RUN apk add --no-cache python3 py3-pip
