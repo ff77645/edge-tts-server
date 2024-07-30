@@ -35,23 +35,29 @@ const App = () => {
         event.preventDefault()
         if (!!formData.text && !!formData.voice) {
             setGenerating(true)
-            fetch(`/tts?text=${formData.text}&voice=${formData.voice}&rate=${formData.rate}`)
-                .then((res) => {
-                    setGenerating(false)
-                    if (res.ok) {
-                        res.json().then((data) => {
-                            setAudioUrl(data.media)
-                            setSubtitlesUrl(data.subtitles)
-                        })
-                    } else {
-                        res.json().then((data) => {
-                            alert(data.error)
-                        })
-                    }
-                })
-                .catch((err) => {
-                    alert(err)
-                })
+            fetch(`/tts`,{
+                method:'POST',
+                body:JSON.stringify(formData),
+                headers:{
+                    'Content-Type':'application/json'
+                }
+            })
+            .then((res) => {
+                setGenerating(false)
+                if (res.ok) {
+                    res.json().then((data) => {
+                        setAudioUrl(data.media)
+                        setSubtitlesUrl(data.subtitles)
+                    })
+                } else {
+                    res.json().then((data) => {
+                        alert(data.error)
+                    })
+                }
+            })
+            .catch((err) => {
+                alert(err)
+            })
         } else {
             alert("Please input text and choose voice")
         }
@@ -103,10 +109,11 @@ const App = () => {
 
     const handleSave = (type:string) => {
         try {
+            const _url = type === 'media' ? audioUrl : subtitlesUrl
             const filename = `${formData.text.slice(0, 5)}_${
                 formData.voice
-            }_${audioUrl.split("/").pop()}`
-            type === 'media' ? saveAs(audioUrl, filename) : saveAs(subtitlesUrl, filename)
+            }_${ _url.split("/").pop()}`
+            saveAs(_url, filename)
         } catch (error) {
             alert(error)
         }

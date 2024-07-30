@@ -41,6 +41,7 @@
     "vite": "^5.2.8"
   },
   "dependencies": {
+    "@koa/bodyparser": "^5.1.1",
     "@koa/cors": "^5.0.0",
     "file-saver": "^2.0.5",
     "immer": "^10.0.4",

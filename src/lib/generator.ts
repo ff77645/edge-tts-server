@@ -23,9 +23,13 @@ export const generateTTS = (text: string, voice: string,rate:any = 1) => {
     }
 
     const _rate = ((rate - 1) * 100).toFixed(0) + '%'
+    let rateCliStr = ''
+    if(_rate !== '0%'){
+        rateCliStr = `--rate=${_rate.startsWith('-') ? _rate : '+'+_rate}`
+    }
 
     execSync(
-        `edge-tts --rate=${_rate} --voice ${voice} --text "${text}" --write-media ${path.join(
+        `edge-tts ${rateCliStr} --voice ${voice} --text "${text}" --write-media ${path.join(
             audioPath,
             f_name
         )} --write-subtitles ${path.join(

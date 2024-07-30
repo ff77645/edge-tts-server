@@ -2,6 +2,7 @@ import Koa from "koa"
 import Static from "koa-static"
 import Router from "koa-router"
 import cors from '@koa/cors'
+import {bodyParser } from '@koa/bodyparser'
 
 import fs from "fs"
 import path from "path"
@@ -12,8 +13,9 @@ import { cleanVoices } from "./lib/clean"
 
 const app = new Koa()
 const router = new Router()
-const PORT = process.env.NODE_ENV === "production" ? 3000 : 3100
+const PORT = 3100
 app.use(cors());
+app.use(bodyParser ());
 app.use(Static("public"))
 
 router.get("/", (ctx) => {
@@ -49,9 +51,10 @@ router.get("/voices", async (ctx) => {
 })
 
 // tts 接口
-router.get("/tts", (ctx) => {
+router.post("/tts", (ctx) => {
     // 返回 link
-    const { text, voice, rate } = ctx.query
+    const { text, voice, rate } = ctx.request.body as {text:string,voice:string,rate:number}
+ 
     if (!text || !voice) {
         ctx.status = 500
         ctx.body = {
