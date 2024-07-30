@@ -12,7 +12,7 @@ import { cleanVoices } from "./lib/clean"
 
 const app = new Koa()
 const router = new Router()
-const PORT = 3000
+const PORT = process.env.NODE_ENV === "production" ? 3000 : 3100
 app.use(cors());
 app.use(Static("public"))
 
@@ -51,7 +51,7 @@ router.get("/voices", async (ctx) => {
 // tts 接口
 router.get("/tts", (ctx) => {
     // 返回 link
-    const { text, voice } = ctx.query
+    const { text, voice, rate } = ctx.query
     if (!text || !voice) {
         ctx.status = 500
         ctx.body = {
@@ -70,10 +70,8 @@ router.get("/tts", (ctx) => {
 
     try {
         cleanVoices()
-        const result = generateTTS(decodeURIComponent(text), voice)
-        ctx.body = {
-            url: result,
-        }
+        const result = generateTTS(decodeURIComponent(text), voice, rate)
+        ctx.body = result
     } catch (e: any) {
         ctx.status = 500
         ctx.body = {

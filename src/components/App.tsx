@@ -8,12 +8,15 @@ const langs = Array.from(
     new Set(innerVoices.map((v) => v.replace(/(\-[a-zA-Z]+)$/, "")))
 )
 
+const rates = [0.5,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0]
+
 const App = () => {
     // TODO 考虑支持 rate 等
     // https://github.com/rany2/edge-tts?tab=readme-ov-file#changing-rate-volume-and-pitch
     const [formData, setFormData] = useImmer({
         text: "",
         voice: localStorage.getItem("prefer-voice") || "",
+        rate:1.0,
     })
 
     const [voices, setVoices] = useState<string[]>(
@@ -22,6 +25,7 @@ const App = () => {
         )
     )
     const [audioUrl, setAudioUrl] = useState<string>("")
+    const [subtitlesUrl, setSubtitlesUrl] = useState<string>("")
     const [generating, setGenerating] = useState<boolean>(false)
     const [playing, setPlaying] = useState<boolean>(false)
 
@@ -31,12 +35,13 @@ const App = () => {
         event.preventDefault()
         if (!!formData.text && !!formData.voice) {
             setGenerating(true)
-            fetch(`/tts?text=${formData.text}&voice=${formData.voice}`)
+            fetch(`/tts?text=${formData.text}&voice=${formData.voice}&rate=${formData.rate}`)
                 .then((res) => {
                     setGenerating(false)
                     if (res.ok) {
                         res.json().then((data) => {
-                            setAudioUrl(data.url)
+                            setAudioUrl(data.media)
+                            setSubtitlesUrl(data.subtitles)
                         })
                     } else {
                         res.json().then((data) => {
@@ -57,6 +62,12 @@ const App = () => {
     ) => {
         setFormData((draft) => {
             draft.text = event.target.value
+        })
+    }
+
+    const handleRateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        setFormData((draft) => {
+            draft.rate = +event.target.value
         })
     }
 
@@ -90,12 +101,12 @@ const App = () => {
         }
     }
 
-    const handleSave = () => {
+    const handleSave = (type:string) => {
         try {
             const filename = `${formData.text.slice(0, 5)}_${
                 formData.voice
             }_${audioUrl.split("/").pop()}`
-            saveAs(audioUrl, filename)
+            type === 'media' ? saveAs(audioUrl, filename) : saveAs(subtitlesUrl, filename)
         } catch (error) {
             alert(error)
         }
@@ -103,6 +114,7 @@ const App = () => {
 
     useEffect(() => {
         setAudioUrl("")
+        setSubtitlesUrl('')
     }, [formData])
 
     useEffect(() => {
@@ -110,6 +122,8 @@ const App = () => {
             setPlaying(false)
         })
     }, [])
+
+
 
     return (
         <div className="flex flex-col justify-center items-center h-screen bg-indigo-950">
@@ -128,26 +142,33 @@ const App = () => {
                         onChange={handleTextChange}
                         required
                     ></textarea>
-                    <div className="mt-3 w-full flex flex-row justify-center items-start">
-                        <select
-                            className="p-3 bg-indigo-600 text-white w-full rounded-lg"
-                            title="Select language"
-                            id="language"
-                            onChange={handleLangChange}
-                            defaultValue={
-                                localStorage.getItem("prefer-lang") || langs[0]
-                            }
-                            required
-                        >
-                            {langs.map((l) => (
-                                <option key={l} value={l}>
-                                    {l}
-                                </option>
-                            ))}
-                        </select>
-                        {voices.length > 0 && (
+                    <div className="mt-3 w-full flex flex-row items-center justify-center gap-5">
+                        {/* 语言选择 */}
+                        <label className="flex flex-nowrap items-center flex-1 gap-2 bg-indigo-600 rounded-lg p-3 overflow-hidden">
+                            <span className="text-white whitespace-nowrap text-lg">语言:</span>
                             <select
-                                className="ml-5 p-3 bg-indigo-600 text-white w-full rounded-lg"
+                                className=" bg-indigo-600 text-white w-full "
+                                title="Select language"
+                                id="language"
+                                onChange={handleLangChange}
+                                defaultValue={
+                                    localStorage.getItem("prefer-lang") || langs[0]
+                                }
+                                required
+                            >
+                                {langs.map((l) => (
+                                    <option key={l} value={l}>
+                                        {l}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        {/* 声音选择 */}
+                        {voices.length > 0 && (
+                        <label className="flex flex-nowrap items-center flex-1 gap-2 bg-indigo-600 rounded-lg p-3 overflow-hidden">
+                            <span className="text-white whitespace-nowrap text-lg">声音:</span>
+                            <select
+                                className=" bg-indigo-600 text-white w-full"
                                 title="Select voice"
                                 id="voice"
                                 onChange={handleVoiceChange}
@@ -163,22 +184,42 @@ const App = () => {
                                     </option>
                                 ))}
                             </select>
+                        </label>
                         )}
+                        {/* 速率选择 */}
+                        <label className="flex flex-nowrap items-center flex-1 gap-2 bg-indigo-600 rounded-lg p-3 overflow-hidden">
+                            <span className="text-white whitespace-nowrap text-lg">速率:</span>
+                            <select
+                                className=" bg-indigo-600 text-white w-full"
+                                title="Select language"
+                                id="language"
+                                onChange={handleRateChange}
+                                defaultValue={1.0}
+                                required
+                            >
+                                {rates.map((l) => (
+                                    <option key={l} value={l}>
+                                        {l}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
                     </div>
 
-                    <div className="mt-3 w-full grid grid-cols-3 gap-2">
+                    <div className="mt-3 w-full grid grid-cols-3 gap-5">
                         <button
                             type="submit"
-                            className="bg-indigo-600 text-white w-full p-3 rounded-lg hover:bg-indigo-800"
+                            className="bg-indigo-600 text-white w-full p-3 rounded-lg hover:bg-indigo-800 flex items-center justify-center"
                             title="get voice"
                         >
                             <span
                                 className="icon-[mdi--widget-bubble]"
                                 style={{ width: "2rem", height: "1.5rem" }}
                             ></span>
+                            提交
                         </button>
                         <button
-                            className="bg-indigo-600 text-white w-full p-3 rounded-lg disabled:bg-indigo-600/20 hover:bg-indigo-800"
+                            className="bg-indigo-600 flex justify-center items-center text-white w-full p-3 rounded-lg disabled:bg-indigo-600/20 disabled:text-gray-400 hover:bg-indigo-800"
                             onClick={handlePlay}
                             disabled={!audioUrl}
                             type="button"
@@ -195,10 +236,11 @@ const App = () => {
                                     style={{ width: "2rem", height: "1.5rem" }}
                                 ></span>
                             )}
+                            播放
                         </button>
                         <button
-                            className="bg-indigo-600 text-white w-full p-3 rounded-lg disabled:bg-indigo-600/20 hover:bg-indigo-800"
-                            onClick={handleSave}
+                            className="bg-indigo-600 text-white w-full flex justify-center items-center disabled:text-gray-400 p-3 rounded-lg disabled:bg-indigo-600/20 hover:bg-indigo-800"
+                            onClick={()=>handleSave('media')}
                             disabled={!audioUrl}
                             type="button"
                             title="save"
@@ -207,6 +249,20 @@ const App = () => {
                                 className="icon-[mdi--tray-download]"
                                 style={{ width: "2rem", height: "1.5rem" }}
                             ></span>
+                            下载音频
+                        </button>
+                        <button
+                            className="bg-indigo-600 text-white w-full flex justify-center items-center disabled:text-gray-400 p-3 rounded-lg disabled:bg-indigo-600/20 hover:bg-indigo-800"
+                            onClick={()=>handleSave('subtitles')}
+                            disabled={!subtitlesUrl}
+                            type="button"
+                            title="save"
+                        >
+                            <span
+                                className="icon-[mdi--tray-download]"
+                                style={{ width: "2rem", height: "1.5rem" }}
+                            ></span>
+                            下载字幕
                         </button>
                     </div>
                 </form>
