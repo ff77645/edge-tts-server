@@ -1,6 +1,7 @@
 import Koa from "koa"
 import Static from "koa-static"
 import Router from "koa-router"
+import cors from '@koa/cors'
 
 import fs from "fs"
 import path from "path"
@@ -11,7 +12,8 @@ import { cleanVoices } from "./lib/clean"
 
 const app = new Koa()
 const router = new Router()
-
+const PORT = 3000
+app.use(cors());
 app.use(Static("public"))
 
 router.get("/", (ctx) => {
@@ -120,6 +122,6 @@ router.get("/clean", (ctx) => {
 
 app.use(router.routes())
 
-app.listen(8088, () => {
-    console.log("Server is running on port 8080")
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`)
 })
